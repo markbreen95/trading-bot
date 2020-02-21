@@ -1,0 +1,142 @@
+Offset: 1
+      lower_limit  upper_limit     profit     return  trade_count
+9371        -1.21         1.43  226.45975  22.645975           14
+
+Offset: 2
+      lower_limit  upper_limit      profit     return  trade_count
+9165        -1.15         1.41  211.692337  21.169234           14
+
+Offset: 3
+      lower_limit  upper_limit      profit     return  trade_count
+9756        -1.06         1.47  204.540449  20.454045           14
+
+Offset: 4
+      lower_limit  upper_limit      profit    return  trade_count
+8943        -0.93         1.39  214.188101  21.41881           17
+
+Offset: 5
+      lower_limit  upper_limit      profit    return  trade_count
+8949        -0.99         1.39  145.456203  14.54562           13
+
+Offset: 6
+      lower_limit  upper_limit      profit    return  trade_count
+8741        -0.91         1.37  145.456203  14.54562           13
+
+Offset: 7
+      lower_limit  upper_limit      profit     return  trade_count
+9033        -0.83          1.4  187.747052  18.774705           13
+
+Offset: 8
+      lower_limit  upper_limit      profit     return  trade_count
+7732        -0.82         1.27  187.747052  18.774705           13
+
+Offset: 9
+      lower_limit  upper_limit      profit     return  trade_count
+9534        -0.84         1.45  169.693889  16.969389           13
+
+Offset: 10
+      lower_limit  upper_limit      profit     return  trade_count
+7938        -0.88         1.29  169.693889  16.969389           13
+
+Offset: 11
+      lower_limit  upper_limit      profit     return  trade_count
+6540         -0.9         1.15  169.693889  16.969389           13
+
+Offset: 12
+      lower_limit  upper_limit      profit     return  trade_count
+8340         -0.9         1.33  169.693889  16.969389           13
+
+Offset: 13
+      lower_limit  upper_limit      profit     return  trade_count
+8743        -0.93         1.37  179.910073  17.991007           12
+
+Offset: 14
+      lower_limit  upper_limit      profit     return  trade_count
+6340         -0.9         1.13  179.910073  17.991007           12
+
+Offset: 15
+      lower_limit  upper_limit      profit     return  trade_count
+8402        -0.52         1.34  199.713082  19.971308           16
+
+Offset: 16
+      lower_limit  upper_limit      profit     return  trade_count
+5208        -0.58         1.02  205.150317  20.515032           18
+
+Offset: 17
+      lower_limit  upper_limit      profit     return  trade_count
+5310         -0.6         1.03  205.150317  20.515032           18
+
+Offset: 18
+      lower_limit  upper_limit      profit     return  trade_count
+5307        -0.57         1.03  185.146822  18.514682           16
+
+Offset: 19
+      lower_limit  upper_limit      profit     return  trade_count
+6715        -0.65         1.17  184.033018  18.403302           12
+
+
+
+
+
+
+01_25 - 02_04
+
+Offset: 1
+      lower_limit  upper_limit     profit    return  trade_count
+9209        -0.59         1.42  57.698658  5.769866            7
+
+Offset: 2
+      lower_limit  upper_limit     profit    return  trade_count
+9113        -0.63         1.41  61.537526  6.153753            7
+
+Offset: 3
+      lower_limit  upper_limit     profit    return  trade_count
+9812        -0.62         1.48  61.537526  6.153753            7
+
+Offset: 4
+      lower_limit  upper_limit    profit    return  trade_count
+8906        -0.56         1.39  81.46068  8.146068            7
+
+Offset: 5
+      lower_limit  upper_limit     profit    return  trade_count
+9607        -0.57         1.46  91.740288  9.174029            7
+
+Offset: 6
+      lower_limit  upper_limit     profit    return  trade_count
+8803        -0.53         1.38  91.740288  9.174029            7
+
+Offset: 7
+      lower_limit  upper_limit     profit    return  trade_count
+9411        -0.61         1.44  91.388065  9.138806            5
+
+Offset: 8
+      lower_limit  upper_limit     profit    return  trade_count
+8505        -0.55         1.35  91.388065  9.138806            5
+
+Offset: 9
+      lower_limit  upper_limit     profit    return  trade_count
+7005        -0.55          1.2  91.388065  9.138806            5
+
+Offset: 10
+      lower_limit  upper_limit     profit    return  trade_count
+7604        -0.54         1.26  91.388065  9.138806            5
+
+Offset: 11
+      lower_limit  upper_limit     profit    return  trade_count
+7400         -0.5         1.24  91.388065  9.138806            5
+
+Offset: 12
+      lower_limit  upper_limit     profit    return  trade_count
+6000         -0.5          1.1  97.790849  9.779085            7
+
+Offset: 13
+      lower_limit  upper_limit     profit    return  trade_count
+5000         -0.5          1.0  52.300625  5.230063            7
+
+Offset: 14
+      lower_limit  upper_limit    profit    return  trade_count
+5000         -0.5          1.0  1.684091  0.168409            3
+
+Offset: 15
+      lower_limit  upper_limit    profit    return  trade_count
+5000         -0.5          1.0  1.684091  0.168409            3
