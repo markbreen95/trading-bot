@@ -9,14 +9,16 @@ Created on Mon Apr 13 11:49:07 2020
 import requests
 import json
 import pandas as pd
+from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import time
 import datetime as dt
 from datetime import datetime, date
 import numpy as np
+import random
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
-
+from sklearn.ensemble import RandomForestClassifier
 
 BASE_URL = 'https://api.binance.com'
 
@@ -131,6 +133,23 @@ def exponential_moving_average(df, window):
     '''
     return df.ewm(span=window).mean()
 
+
+def calc_rsi(df, n=14):
+    delta = df['close'].diff()
+    #-----------
+    dUp, dDown = delta.copy(), delta.copy()
+    dUp[dUp < 0] = 0
+    dDown[dDown > 0] = 0
+    
+    RolUp = dUp.rolling(14).mean()
+    RolDown = dDown.rolling(14).mean().abs()
+      
+    RS = RolUp / RolDown
+    rsi= 100.0 - (100.0 / (1.0 + RS))
+    df['rsi'] = rsi
+    return df
+
+
 def crossover_strategy(df, ma_short, ma_long, l_b, u_b):
     '''Simulate the crossover strategy between two moving averages
     
@@ -144,6 +163,7 @@ def crossover_strategy(df, ma_short, ma_long, l_b, u_b):
     Returns: 
         pd.DataFrame: Pandas dataframe containing trades executed
     '''
+    df = df.copy()
     ma_div = ma_short/ma_long 
    
     lower_lim = np.full(len(ma_div), l_b)
@@ -183,6 +203,7 @@ def get_portfolio_ts(df, trades, trade_allocation, starting_btc = 1.0, starting_
     Returns:
         pd.DataFrame: Dataframe containing original data along with portfolio timeseries
     '''
+    df = df.copy()
     portfolio = []
     btc_value = starting_btc
     usd_value = starting_usd
@@ -193,19 +214,20 @@ def get_portfolio_ts(df, trades, trade_allocation, starting_btc = 1.0, starting_
         open_positions = 0
     for idx, row in df.iterrows():
         if idx in trades.index:
-            print('transaction')
             if trades.loc[idx, 'trade'] == 'buy':
                 if open_positions < max_positions and usd_value > 0:
                     btc_value += trade_allocation * usd_value / row['close']
                     usd_value = usd_value * (1 - trade_allocation)
-                    print('Buy {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                    print('Timestamp: {}'.format(idx))
+                    print('Buy {} BTC @ ${}, cash remaining ${}\n'.format(btc_value, 
                                                                         row['close'],
                                                                         usd_value))
                     open_positions += 1
             if trades.loc[idx, 'trade'] == 'sell':
                 if open_positions > 0 and btc_value > 0:
                     usd_value += btc_value / open_positions * row['close']
-                    print('Sell {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                    print('Timestamp: {}'.format(idx))
+                    print('Sell {} BTC @ ${}, cash remaining ${}\n'.format(btc_value, 
                                                                         row['close'],
                                                                         usd_value))
                     btc_value = btc_value * (open_positions - 1) / open_positions
@@ -243,8 +265,11 @@ def get_intervals(start_date, end_date):
         return intervals
     
 
-start_date = date(2020, 1, 1)
-end_date = date(2020, 4, 20)
+start_date = date(2019, 1, 1)
+end_date = date(2019, 6, 1)
+
+start_date = date(2018, 1, 1)
+end_date = date(2019, 4, 20)
 
 btc = get_historical_data('BTCUSDT', start_date=start_date, end_date=end_date)
 
@@ -253,9 +278,9 @@ btc.to_csv('btc_2018_2020.csv', index=None)
 ema = exponential_moving_average(btc, 10)
 ma = moving_average(btc, 20)
 
-port, trades = crossover_strategy(btc, ema, ma, 1, 1)
+trades = crossover_strategy(btc, ema, ma, 1, 1)
 
-test_df = get_portfolio_ts(port, trades, 0.8)
+test_df = get_portfolio_ts(btc, trades, 0.8)
 
 plt.plot(ema.close)
 plt.plot(ma.close)
@@ -265,8 +290,171 @@ plt.plot(test_df.portfolio, label='Portfolio')
 plt.legend()
 plt.show()
 
+
+'''
+
+    Strategy 2: Classification of next n period returns
+
+'''
+
+returns = btc.pct_change()
+
+window = 5
+
+next_returns = []
+
+for i in range(len(btc)-window):
+    tmp_df = returns.loc[returns.index[i+1:i+window+1]]
+    next_returns.append(tmp_df['close'].sum())
+    btc.loc[btc.index[i], 'next_return'] = tmp_df['close'].sum()
+
+
 plt.plot(btc.close)
-plt.plot(ma.close)
+plt.plot(btc.close + btc.next_return)
+
+btc = calc_rsi(btc)
+
+
+def gen_signal(x, lower_bound, upper_bound):
+    if x > upper_bound:
+        return 'buy'
+    if x < lower_bound:
+        return 'sell'
+    if x < upper_bound and x > lower_bound:
+        return 'hold'
+
+lower_bound = -0.03
+upper_bound = 0.03
+btc['signal'] = btc['next_return'].apply(lambda x: gen_signal(x, lower_bound, upper_bound))    
+
+buy_points = btc[ btc['signal'] == 'buy'].index
+sell_points = btc[ btc['signal'] == 'sell'].index
+
+#buys = btc.loc[buy_points, 'close']
+#sells = btc.loc[sell_points, 'close']
+
+sell_trades = btc.loc[sell_points, ['close']]
+sell_trades['trade']= ['sell' for x in sell_trades.close]
+
+buy_trades = btc.loc[buy_points, ['close']]
+buy_trades['trade']= ['buy' for x in buy_trades.close]
+
+trades = pd.concat([sell_trades, buy_trades], axis=0).sort_index()
+
+test_df = get_portfolio_ts(btc, trades, 0.5)
+
+plt.plot(test_df.close)
+plt.plot(test_df.portfolio)
+
+btc['ma'] = ma.close
+btc['ema'] = ema.close
+model_df = btc.dropna()
+x_cols = ['close', 'volume', 'ma', 'ema', 'rsi']
+X = model_df[x_cols]
+y = model_df.signal
+
+clf_rf = RandomForestClassifier()
+clf_rf.fit(X, y)
+
+clf_rf.score(X, y)
+
+y_pred = clf_rf.predict(X)
+
+model_df['trade'] = y_pred
+trades = model_df[ model_df['trade'].isin(['buy', 'sell'])]
+trades = trades[['trade', 'close']]
+
+test_df = get_portfolio_ts(btc, trades, 0.3, 1.0, 0)
+
+buys = trades[ trades['trade'] == 'buy']
+sells = trades[ trades['trade'] == 'sell']
+
+plt.plot(test_df.close, label='BTCUSDT')
+plt.plot(test_df.portfolio, label='Portfolio')
+plt.scatter(buys.index, buys.close, label='Buys', color='k')
+plt.scatter(sells.index, sells.close, label='Sells', color='red')
+plt.legend()
+plt.show()
+
+# Compare with crossover strategy
+
+crossover_trades = crossover_strategy(btc, ema, ma, 1, 1)
+
+crossover_df = get_portfolio_ts(btc, crossover_trades, 0.8)
+
+plt.plot(crossover_df.portfolio, label='Crossover Strategy')
+plt.plot(test_df.portfolio, label='Random Forest')
+plt.legend()
+plt.show()
+
+plt.plot(0.5*crossover_df.portfolio+0.5*test_df.portfolio)
+
+returns = []
+weight_1 = []
+weight_2 = []
+sharpe = []
+
+for n in range(10000):
+    
+    a = random.uniform(0, 1)
+    b = random.uniform(0, 1)
+    
+    w1 = a / (a + b)
+    w2 = b / (a + b)
+    
+    portfolio_agg = crossover_df.portfolio*w1 + test_df.portfolio*w2
+    
+    R = portfolio_agg.pct_change().cumsum()
+    
+    r = R.diff()
+    
+    sr = r.mean()/r.std() * np.sqrt(365)
+    
+    returns.append(portfolio_agg.pct_change().sum())
+    weight_1.append(w1)
+    weight_2.append(w2)
+    sharpe.append(sr)
+
+results_df = pd.DataFrame({'crossover_weight': weight_1, 'rf_weight': weight_2,
+              'roi': returns, 'risk': sharpe})
+
+results_df.sort_values('roi')
+
+plt.scatter(results_df.roi, results_df.risk)
+
+results_df[ ['roi', 'risk'] ].max(axis=1)
+
+optimal_portfolio = np.argmax(results_df.roi+results_df.risk)
+results_df.iloc[optimal_portfolio, :]
+
+ax = plt.axes(projection='3d')
+
+# Data for three-dimensional scattered points
+zdata = results_df.roi
+xdata = results_df.rf_weight
+ydata = results_df.crossover_weight
+ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');
+
+N = 100
+R = pd.DataFrame(np.random.normal(size=100)).cumsum()
+
+# Approach 1
+r = (R - R.shift(1))/R.shift(1)
+
+# Approach 2
+r = R.diff()
+
+sr = r.mean()/r.std() * np.sqrt(252)
+
+'''
+
+    ETHUSDT Charts
+    
+'''
+
+plt.plot(btc.close, label='BTCUSDT')
+plt.scatter(buys.index, buys, label='buys')
+plt.scatter(sells.index, sells, label='sells')
 
 lm = LinearRegression()
 X = btc.close.values.reshape(-1, 1)
