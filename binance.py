@@ -110,46 +110,74 @@ def crossover_strategy(df, ma_short, ma_long, l_b, u_b):
     cap_all = np.arange(0.01, 1.0, 0.01)
     port_val = []
     
-    for trade_allocation in cap_all:
-        btc_value = 0.0
-        usd_starting = 100.0
-        usd_value = usd_starting
-        
-        #trade_allocation = 0.2
-        max_positions = 1 / trade_allocation
-          
-        open_positions = 0
-        
-        for idx, row in trades.iterrows():
-            if row['trade'] == 'buy':
-                if open_positions < max_positions:
-                    btc_value += trade_allocation * usd_value / row['close']
-                    usd_value = usd_value * (1 - trade_allocation)
-                    #print('Buy {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
-                    #                                                    row['close'],
-                    #                                                    usd_value))
-                    open_positions += 1
-            if row['trade'] == 'sell':
-                if open_positions > 0:
-                    usd_value += btc_value / open_positions * row['close']
-                    btc_value = btc_value * (open_positions - 1) / open_positions
-                    #print('Sell {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
-                    #                                                    row['close'],
-                    #                                                    usd_value))
-        
-                    open_positions -= 1
-        
-        final_btc_value = btc_value * df.loc[df.index[-1], 'close']
-        
-        port_val.append(final_btc_value+usd_value)    
-        #print('Final portfolio value is: ${}'.format(final_btc_value + usd_value))
+    trade_allocation = 0.8
     
+    btc_value = 1.0
+    usd_starting = 0.0
+    usd_value = usd_starting
+    
+    #trade_allocation = 0.2
+    max_positions = int(1 / trade_allocation)
+      
+    open_positions = 0
+    
+    portfolio = []
+    
+    for idx, row in df.iterrows():
+        if (ma_div.loc[df.index[i-1], 'close'] < lower_lim[i-1] and
+            ma_div.loc[df.index[i], 'close'] > lower_lim[i-1]):
+            if open_positions < max_positions:
+                btc_value += trade_allocation * usd_value / row['close']
+                usd_value = usd_value * (1 - trade_allocation)
+                print('Buy {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                                                                    row['close'],
+                                                                    usd_value))
+                open_positions += 1
+        if (ma_div.loc[df.index[i-1], 'close'] > upper_lim[i-1] and
+            ma_div.loc[df.index[i], 'close'] < upper_lim[i]):
+            if open_positions > 0:
+                usd_value += btc_value / open_positions * row['close']
+                btc_value = btc_value * (open_positions - 1) / open_positions
+                print('Sell {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                                                                    row['close'],
+                                                                    usd_value))
+    
+                open_positions -= 1
+            
+        portfolio.append(btc_value * row['close'] + usd_value)
+    
+    """
+    for idx, row in trades.iterrows():
+        if row['trade'] == 'buy':
+            if open_positions < max_positions:
+                btc_value += trade_allocation * usd_value / row['close']
+                usd_value = usd_value * (1 - trade_allocation)
+                #print('Buy {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                #                                                    row['close'],
+                #                                                    usd_value))
+                open_positions += 1
+        if row['trade'] == 'sell':
+            if open_positions > 0:
+                usd_value += btc_value / open_positions * row['close']
+                btc_value = btc_value * (open_positions - 1) / open_positions
+                #print('Sell {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                #                                                    row['close'],
+                #                                                    usd_value))
+    
+                open_positions -= 1
+    """
+    final_btc_value = btc_value * df.loc[df.index[-1], 'close']
+    
+    #port_val.append(final_btc_value+usd_value)    
+    #print('Final portfolio value is: ${}'.format(final_btc_value + usd_value))
+    df['portfolio'] = portfolio
     btc_start = df.loc[df.index[0], 'close']
     btc_end = df.loc[df.index[-1], 'close']
     
-    market_return = usd_starting * (1+(btc_end-btc_start)/btc_start)
-    plt.plot(cap_all, port_val)
-    plt.hlines(market_return, min(cap_all), max(cap_all))
+    #market_return = usd_starting * (1+(btc_end-btc_start)/btc_start)
+    #plt.plot(cap_all, port_val)
+    #plt.hlines(market_return, min(cap_all), max(cap_all))
+    return df
 
 def get_intervals(start_date, end_date):
     day_delta = calc_delta(start_date, end_date)
@@ -167,8 +195,8 @@ def get_intervals(start_date, end_date):
         return intervals
     
 
-start_date = date(2018, 1, 1)
-end_date = date(2020, 3, 20)
+start_date = date(2020, 1, 1)
+end_date = date(2020, 4, 20)
 
 btc = get_historical_data('BTCUSDT', start_date=start_date, end_date=end_date)
 
@@ -177,7 +205,12 @@ btc.to_csv('btc_2018_2020.csv', index=None)
 ema = exponential_moving_average(btc, 10)
 ma = moving_average(btc, 20)
 
-crossover_strategy(btc, ema, ma, 1, 1)
+port = crossover_strategy(btc, ema, ma, 1, 1)
+
+plt.plot(btc.close, label='BTCUSDT')
+plt.plot(btc.portfolio, label='Portfolio')
+plt.legend()
+plt.show()
 
 plt.plot(btc.close)
 plt.plot(ma.close)
@@ -190,7 +223,7 @@ lm.fit(X, y)
 lm.coef_ # 0.03611594
 lm.intercept_ # -33.21228, -47.31891
 
-plt.scatter(btc.close, eth.close, s=0.5)
+plt.scatter(btc.close, btc.quote_asset_volume, s=0.5)
 plt.plot(X, lm.predict(X))
 plt.show()
 
@@ -247,8 +280,8 @@ plt.scatter(ma_10.close, btc.close)
 
 ma_div = ema_10/ma_30
 
-l_b = 0.995
-u_b = 1.005
+l_b = 1.0
+u_b = 1.0
 
 lower_lim = np.full(len(ma_div), l_b)
 upper_lim = np.full(len(ma_div), u_b)
@@ -293,6 +326,46 @@ for idx, row in returns.iterrows():
         buys.append(idx)
 
 """
+
+btc_value = 1.0
+usd_starting = 0.0
+usd_value = usd_starting
+
+trade_allocation = 0.8
+max_positions = int(1 / trade_allocation)
+
+open_positions = 0
+
+portfolio = []
+
+for idx, row in returns.iterrows():
+    print(row.close)
+    if row['close'] > 0.005:
+        if open_positions > 0:
+            usd_value += btc_value / open_positions * btc.loc[idx, 'close']
+            print('Sell {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                                                                btc.loc[idx, 'close'],
+                                                                usd_value))
+            btc_value = btc_value * (open_positions - 1) / open_positions
+
+            open_positions -= 1
+    if row['close'] < -0.005:        
+        if open_positions < max_positions:
+            btc_value += trade_allocation * usd_value / btc.loc[idx, 'close']
+            usd_value = usd_value * (1 - trade_allocation)
+            print('Buy {} BTC @ ${}, cash remaining ${}'.format(btc_value, 
+                                                                btc.loc[idx, 'close'],
+                                                                usd_value))
+            open_positions += 1
+    portfolio.append(btc_value * btc.loc[idx, 'close'] + usd_value)
+    
+btc['portfolio'] = portfolio
+
+plt.plot(btc.close, label='BTCUSDT')
+plt.plot(btc.portfolio, label='Portfolio')
+plt.legend()
+    
+final_btc_value = btc_value * btc.loc[btc.index[-1], 'close']
 
 plt.plot(btc.close)
 plt.scatter(sells, btc.loc[sells, 'close'], c='r', label='sells')
