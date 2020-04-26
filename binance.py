@@ -26,6 +26,17 @@ endpoints = {
     }
 
 def fetch_kline_data(symbol, start_date=None, end_date=None, interval='1h'):
+    '''Get kline (OHLC) data from Binance
+    
+    Parameters:
+        symbol (str): Trading symbol
+        start_date (Datetime.date): Start date
+        end_date (Datetime.date): End date
+        interval (str): Interval frequency
+        
+    Returns:
+        pd.DataFrame: Pandas dataframe containing OHLC data.
+    '''
     if start_date and end_date:
         start_timestamp = time.mktime(start_date.timetuple())
         end_timestamp = time.mktime(end_date.timetuple())
@@ -62,7 +73,18 @@ def fetch_kline_data(symbol, start_date=None, end_date=None, interval='1h'):
 
     return kline
 
-def get_historical_data(symbol, start_date, end_date):        
+def get_historical_data(symbol, start_date, end_date): 
+    '''Fetch historical data between a start and end date for a specified 
+    symbbol
+    
+    Parameters:
+        symbol (str): Trading symbol
+        start_date (Datetime.date): Start date
+        end_date (Datetime.date): End date
+        
+    Returns:
+        pd.DataFrame: Pandas dataframe with OHLC data
+    '''
     intervals = get_intervals(start_date, end_date)
     
     dfs = []
@@ -71,19 +93,57 @@ def get_historical_data(symbol, start_date, end_date):
     return pd.concat(dfs)
 
 def calc_delta(start_date, end_date):
+    '''Calculate difference in days between two dates
+    
+    Parameters:
+        start_date (Datetime.date): Start date
+        end_date (Datetime.date): End date
+        
+    Returns:
+        int: Number of days between two dates
+    '''
     start = isinstance(start_date, date)
     end = isinstance(end_date, date)
     if start and end:
         return (end_date - start_date).days
 
 def moving_average(df, window):
+    '''Calculates simple moving average for time series data
+    
+    Parameters:
+        df (pd.DataFrame): Containing time series data
+        window (int): Window to calculate SMA over
+        
+    Returns:
+        pd.DataFrame: Pandas dataframe containing SMA data
+    '''
     return df.rolling(window).mean()
 
 def exponential_moving_average(df, window):
+    '''Calculates exponential moving average for time series data
+    
+    Parameters:
+        df (pd.DataFrame): Containing time series data
+        window (int): Window to calculate the EMA over
+        
+    Returns:
+        pd.DataFrame: Pandas dataframe containing EMA data
+    '''
     return df.ewm(span=window).mean()
 
 def crossover_strategy(df, ma_short, ma_long, l_b, u_b):
+    '''Simulate the crossover strategy between two moving averages
     
+    Paramters:
+        df (pd.DataFrame): Pandas dataframe to simulate strategy for close price
+        ma_short (pd.DataFrame): Shorter window moving average data
+        ma_long (pd.DataFrame): Longer window moving average data
+        l_b (float): Lower bound threshold for simulation 
+        u_b (float): Upper bound threshold for simulation
+        
+    Returns: 
+        pd.DataFrame: Pandas dataframe containing trades executed
+    '''
     ma_div = ma_short/ma_long 
    
     lower_lim = np.full(len(ma_div), l_b)
@@ -111,6 +171,18 @@ def crossover_strategy(df, ma_short, ma_long, l_b, u_b):
 
 
 def get_portfolio_ts(df, trades, trade_allocation, starting_btc = 1.0, starting_usd = 0.0):
+    '''Get the portfolio time series for a particular strategy
+    
+    Parameters:
+        df (pd.DataFrame): Pricing data
+        trades (pd.DataFrame): Dataframe containing trades made
+        trade_allocation (float): Propotion of capital to allocate per trade
+        starting_btc (float): Starting amount in Bitcoin
+        starting_usd (float): Starting amount in USD
+        
+    Returns:
+        pd.DataFrame: Dataframe containing original data along with portfolio timeseries
+    '''
     portfolio = []
     btc_value = starting_btc
     usd_value = starting_usd
@@ -145,6 +217,17 @@ def get_portfolio_ts(df, trades, trade_allocation, starting_btc = 1.0, starting_
     
 
 def get_intervals(start_date, end_date):
+    '''The max number of days worth of hourly data that can be returns from
+    the Binance API is roughly 20. This function will calculate the intermediate
+    intervals between two dates if the window is too large
+    
+    Paramters:
+        start_date (Datetime.date): Starting date
+        end_date (Datetime.date): Ending date
+        
+    Returns:
+        list: Containing tuples of intervals
+    '''
     day_delta = calc_delta(start_date, end_date)
     intervals = []
     if day_delta < 20:
